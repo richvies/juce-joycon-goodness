@@ -1,9 +1,9 @@
 /*
-  ==============================================================================
+    ==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin processor.
+        This file contains the basic framework code for a JUCE plugin processor.
 
-  ==============================================================================
+    ==============================================================================
 */
 
 #pragma once
@@ -13,15 +13,15 @@
 //==============================================================================
 /**
 */
-class JUCEtemplateAudioProcessor  : public juce::AudioProcessor
+class JoyconGoodnessAudioProcessor  : public juce::AudioProcessor
                             #if JucePlugin_Enable_ARA
                              , public juce::AudioProcessorARAExtension
                             #endif
 {
 public:
     //==============================================================================
-    JUCEtemplateAudioProcessor();
-    ~JUCEtemplateAudioProcessor() override;
+    JoyconGoodnessAudioProcessor();
+    ~JoyconGoodnessAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -58,5 +58,5 @@ public:
 
 private:
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JUCEtemplateAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JoyconGoodnessAudioProcessor)
 };

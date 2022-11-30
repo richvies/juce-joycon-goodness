@@ -5,6 +5,15 @@
 		}
 	],
 	"settings": {
+		"C_Cpp.loggingLevel": "Debug",
+		"editor.quickSuggestions": {
+			"other": "on",
+			"comments": "on",
+			"strings": "on"
+		},
+		"editor.quickSuggestionsDelay": 10,
+		"editor.inlineSuggest.enabled": true,
+		"editor.detectIndentation": true,
 		"files.exclude": {
 			"**/.git": true,
 			"**/.svn": true,

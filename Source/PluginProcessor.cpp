@@ -10,7 +10,7 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-JUCEtemplateAudioProcessor::JUCEtemplateAudioProcessor()
+JoyconGoodnessAudioProcessor::JoyconGoodnessAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -24,17 +24,17 @@ JUCEtemplateAudioProcessor::JUCEtemplateAudioProcessor()
 {
 }
 
-JUCEtemplateAudioProcessor::~JUCEtemplateAudioProcessor()
+JoyconGoodnessAudioProcessor::~JoyconGoodnessAudioProcessor()
 {
 }
 
 //==============================================================================
-const juce::String JUCEtemplateAudioProcessor::getName() const
+const juce::String JoyconGoodnessAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool JUCEtemplateAudioProcessor::acceptsMidi() const
+bool JoyconGoodnessAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -43,7 +43,7 @@ bool JUCEtemplateAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool JUCEtemplateAudioProcessor::producesMidi() const
+bool JoyconGoodnessAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -52,7 +52,7 @@ bool JUCEtemplateAudioProcessor::producesMidi() const
    #endif
 }
 
-bool JUCEtemplateAudioProcessor::isMidiEffect() const
+bool JoyconGoodnessAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -61,50 +61,56 @@ bool JUCEtemplateAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double JUCEtemplateAudioProcessor::getTailLengthSeconds() const
+double JoyconGoodnessAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int JUCEtemplateAudioProcessor::getNumPrograms()
+int JoyconGoodnessAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int JUCEtemplateAudioProcessor::getCurrentProgram()
+int JoyconGoodnessAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void JUCEtemplateAudioProcessor::setCurrentProgram (int index)
+void JoyconGoodnessAudioProcessor::setCurrentProgram (int index)
 {
+    (void)index;
 }
 
-const juce::String JUCEtemplateAudioProcessor::getProgramName (int index)
+const juce::String JoyconGoodnessAudioProcessor::getProgramName (int index)
 {
+    (void)index;
     return {};
 }
 
-void JUCEtemplateAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void JoyconGoodnessAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
+    (void)index;
+    (void)newName;
 }
 
 //==============================================================================
-void JUCEtemplateAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void JoyconGoodnessAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    (void)sampleRate;
+    (void)samplesPerBlock;
 }
 
-void JUCEtemplateAudioProcessor::releaseResources()
+void JoyconGoodnessAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool JUCEtemplateAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool JoyconGoodnessAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -129,8 +135,10 @@ bool JUCEtemplateAudioProcessor::isBusesLayoutSupported (const BusesLayout& layo
 }
 #endif
 
-void JUCEtemplateAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void JoyconGoodnessAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    (void)midiMessages;
+
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -152,40 +160,43 @@ void JUCEtemplateAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // interleaved by keeping the same state.
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
+        // auto* channelData = buffer.getWritePointer (channel);
 
         // ..do something to the data...
     }
 }
 
 //==============================================================================
-bool JUCEtemplateAudioProcessor::hasEditor() const
+bool JoyconGoodnessAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* JUCEtemplateAudioProcessor::createEditor()
+juce::AudioProcessorEditor* JoyconGoodnessAudioProcessor::createEditor()
 {
-    return new JUCEtemplateAudioProcessorEditor (*this);
+    return new JoyconGoodnessAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void JUCEtemplateAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void JoyconGoodnessAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    (void)destData;
 }
 
-void JUCEtemplateAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void JoyconGoodnessAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    (void)data;
+    (void)sizeInBytes;
 }
 
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new JUCEtemplateAudioProcessor();
+    return new JoyconGoodnessAudioProcessor();
 }
