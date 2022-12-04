@@ -74,7 +74,8 @@ juce_generate_juce_header(JoyconGoodness)
 target_sources(JoyconGoodness
     PRIVATE
         Source/PluginEditor.cpp
-        Source/PluginProcessor.cpp)
+        Source/PluginProcessor.cpp
+        Source/joycon.cpp)
 
 # `target_compile_definitions` adds some preprocessor definitions to our target. In a Projucer
 # project, these might be passed in the 'Preprocessor Definitions' field. JUCE modules also make use
@@ -109,6 +110,7 @@ target_link_libraries(JoyconGoodness
     PRIVATE
         # AudioPluginData           # If we'd created a binary data target, we'd link to it here
         juce::juce_audio_utils
+        juce::juce_opengl
         hidapi::hidapi
     PUBLIC
         juce::juce_recommended_config_flags

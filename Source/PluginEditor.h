@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "hidapi.h"
+#include "joycon.hpp"
 
 //==============================================================================
 /**
@@ -34,10 +35,9 @@ private:
     JoyconGoodnessAudioProcessor& audioProcessor;
 
     juce::ComboBox hidSelector;
-    hid_device* hidDev;
+    Joycon* joycon = nullptr;
     std::vector<hid_device_info> hidInfo;
     juce::TextButton hidText;
-    juce::TextButton hidDbg;
     uint8 global_count;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JoyconGoodnessAudioProcessorEditor)
