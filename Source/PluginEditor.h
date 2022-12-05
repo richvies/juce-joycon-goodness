@@ -34,17 +34,25 @@ private:
     juce::TextButton hidText;
     juce::TextButton outText;
     std::vector<hid_device_info> hidDevies;
-    Joycon* joycon = nullptr;
 
     void timerCallback() override
     {
-        if (nullptr != joycon)
+        if (nullptr != audioProcessor.getJoycon())
         {
             juce::String str = "";
-            str += "pitch: " + juce::String(joycon->getPitchRollYaw().x, 2) + " ";
-            str += "roll: " + juce::String(joycon->getPitchRollYaw().y, 2) + " ";
-            str += "yaw: " + juce::String(joycon->getPitchRollYaw().z, 2) + " ";
+            str += "pitch: " + juce::String(audioProcessor.getJoycon()->getPitchRollYaw().x, 2) + " ";
+            str += "roll: " + juce::String(audioProcessor.getJoycon()->getPitchRollYaw().y, 2) + " ";
+            str += "yaw: " + juce::String(audioProcessor.getJoycon()->getPitchRollYaw().z, 2) + " ";
             outText.setButtonText(str);
+        }
+    }
+
+    void joyconAttached()
+    {
+        if (nullptr != audioProcessor.getJoycon())
+        {
+            hidText.setButtonText(juce::String{audioProcessor.getHidDeviceInfo()->product_string});
+            startTimer(10);
         }
     }
 

@@ -13,8 +13,6 @@
 JoyconGoodnessAudioProcessorEditor::JoyconGoodnessAudioProcessorEditor (JoyconGoodnessAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    hid_init();
-
     addAndMakeVisible(hidSelector);
     hidSelector.addMouseListener(this, true);
     hidSelector.addListener(this);
@@ -26,12 +24,12 @@ JoyconGoodnessAudioProcessorEditor::JoyconGoodnessAudioProcessorEditor (JoyconGo
     setSize (800, 600);
 
     getLocalBounds();
+
+    joyconAttached();
 }
 
 JoyconGoodnessAudioProcessorEditor::~JoyconGoodnessAudioProcessorEditor()
 {
-    if (nullptr != joycon)
-        delete joycon;
 }
 
 //==============================================================================
@@ -72,9 +70,7 @@ void JoyconGoodnessAudioProcessorEditor::comboBoxChanged (ComboBox* comboBoxThat
 
         if (true == audioProcessor.setHidDevice(info))
         {
-            hidText.setButtonText(juce::String{info.product_string});
-            joycon = audioProcessor.getJoycon();
-            startTimer(10);
+            joyconAttached();
         }
     }
 }

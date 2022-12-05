@@ -18,7 +18,7 @@ public:
 
     ~Joycon()
     {
-        if(pollThread.isThreadRunning()) pollThread.stopThread(500);
+        Detach();
     }
 
     void Begin()
@@ -93,6 +93,12 @@ public:
             Subcommand(0x3, std::vector<uint8_t> { 0x3f });
         }
 
+        if(pollThread.isThreadRunning())
+        {
+            DebugPrint("End poll thread.", DebugType::THREADING);
+            pollThread.stopThread(1000);
+        }
+
         if (state > state_::DROPPED)
         {
             hid_close(hid_dev);
@@ -105,8 +111,11 @@ public:
     {
         if (stop_polling || (state <= state_::NO_JOYCONS))
         {
-            DebugPrint("End poll thread.", DebugType::THREADING);
-            pollThread.stopThread(500);
+            if(pollThread.isThreadRunning())
+            {
+                DebugPrint("End poll thread.", DebugType::THREADING);
+                pollThread.stopThread(500);
+            }
         }
 
         if (state > state_::NO_JOYCONS)
@@ -431,7 +440,7 @@ private:
     {
         if (hid_dev == nullptr) return -2;
 
-        hid_set_nonblocking(hid_dev, 0);
+        hid_set_nonblocking(hid_dev, 1);
 
         std::vector<uint8_t> raw_buf(report_len);
 
@@ -470,8 +479,13 @@ private:
         {
             int attempts = 0;
 
-            while (!threadShouldExit())
+            while (1)
             {
+                if (threadShouldExit())
+                {
+                    return;
+                }
+
                 j.SendRumble(j.rumble_obj.GetData());
 
                 if (j.ReceiveRaw() > 0)

@@ -22,14 +22,18 @@ JoyconGoodnessAudioProcessor::JoyconGoodnessAudioProcessor()
                        )
 #endif
 {
+    hid_init();
 }
 
 JoyconGoodnessAudioProcessor::~JoyconGoodnessAudioProcessor()
 {
-    if (nullptr == joycon)
+    stopTimer();
+    if (nullptr != joycon)
     {
         joycon->Detach();
+        delete joycon;
     }
+    hid_exit();
 }
 
 //==============================================================================

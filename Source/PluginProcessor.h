@@ -83,27 +83,37 @@ public:
         auto dev = hid_open(info.vendor_id, info.product_id, nullptr);
         bool ret = false;
 
-        if (joycon != nullptr)
+        if (nullptr != dev)
         {
-            joycon->Detach();
-            delete joycon;
-        }
+            currentHidInfo = info;
 
-        joycon = new Joycon(dev, true, true, 0.05f, (info.product_id == Joycon::product_id_left) ? true : false);
+            if (joycon != nullptr)
+            {
+                joycon->Detach();
+                delete joycon;
+            }
 
-        if (true == joycon->Attach())
-        {
-            ret = true;
-            joycon->Begin();
-            startTimer(5);
+            joycon = new Joycon(dev, true, true, 0.05f, (info.product_id == Joycon::product_id_left) ? true : false);
+
+            if (true == joycon->Attach())
+            {
+                ret = true;
+                joycon->Begin();
+                startTimer(5);
+            }
         }
 
         return ret;
     }
 
-    Joycon* getJoycon(void)
+    Joycon* const getJoycon(void)
     {
         return joycon;
+    }
+
+    hid_device_info* const getHidDeviceInfo(void)
+    {
+        return &currentHidInfo;
     }
 
 private:
@@ -111,6 +121,7 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JoyconGoodnessAudioProcessor)
 
     Joycon* joycon = nullptr;
+    hid_device_info currentHidInfo;
 
     void timerCallback() override
     {
