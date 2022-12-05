@@ -26,6 +26,10 @@ JoyconGoodnessAudioProcessor::JoyconGoodnessAudioProcessor()
 
 JoyconGoodnessAudioProcessor::~JoyconGoodnessAudioProcessor()
 {
+    if (nullptr == joycon)
+    {
+        joycon->Detach();
+    }
 }
 
 //==============================================================================
@@ -152,17 +156,12 @@ void JoyconGoodnessAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    midiMessages.clear();
+    if (nullptr != joycon)
     {
-        // auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
+        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  23, (int)(joycon->getPitchRollYaw().x * 20.f)), 0);
+        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  24, (int)(joycon->getPitchRollYaw().y * 20.f)), 0);
+        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  25, (int)(joycon->getPitchRollYaw().z * 20.f)), 0);
     }
 }
 

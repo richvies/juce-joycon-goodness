@@ -10,13 +10,11 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-#include "hidapi.h"
-#include "joycon.hpp"
 
 //==============================================================================
 /**
 */
-class JoyconGoodnessAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::ComboBox::Listener
+class JoyconGoodnessAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::ComboBox::Listener, public juce::Timer
 {
 public:
     JoyconGoodnessAudioProcessorEditor (JoyconGoodnessAudioProcessor&);
@@ -29,16 +27,26 @@ public:
 private:
     void mouseDown (const MouseEvent& event) override;
     void comboBoxChanged (ComboBox* comboBoxThatHasChanged) override;
-    void JoyconSubcmd(uint8 sc, uint8 *buf, uint8 len, bool print = true);
-    bool Attach(uint8 leds_ = 0x0);
 
     JoyconGoodnessAudioProcessor& audioProcessor;
 
     juce::ComboBox hidSelector;
-    Joycon* joycon = nullptr;
-    std::vector<hid_device_info> hidInfo;
     juce::TextButton hidText;
-    uint8 global_count;
+    juce::TextButton outText;
+    std::vector<hid_device_info> hidDevies;
+    Joycon* joycon = nullptr;
+
+    void timerCallback() override
+    {
+        if (nullptr != joycon)
+        {
+            juce::String str = "";
+            str += "pitch: " + juce::String(joycon->getPitchRollYaw().x, 2) + " ";
+            str += "roll: " + juce::String(joycon->getPitchRollYaw().y, 2) + " ";
+            str += "yaw: " + juce::String(joycon->getPitchRollYaw().z, 2) + " ";
+            outText.setButtonText(str);
+        }
+    }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JoyconGoodnessAudioProcessorEditor)
 };

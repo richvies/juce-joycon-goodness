@@ -16,6 +16,8 @@ cmake_minimum_required(VERSION 3.15)
 
 project(JOYCON_GOODNESS VERSION 0.0.1)
 
+set(CMAKE_OSX_ARCHITECTURES "arm64")
+
 # If you've installed JUCE somehow (via a package manager, or directly using the CMake install
 # target), you'll need to tell this project that it depends on the installed copy of JUCE. If you've
 # included JUCE directly in your source tree (perhaps as a submodule), you'll need to tell CMake to
@@ -26,8 +28,9 @@ project(JOYCON_GOODNESS VERSION 0.0.1)
 add_subdirectory(JUCE)                      # If you've put JUCE in a subdirectory called JUCE
 
 # hidapi
+set(BUILD_SHARED_LIBS FALSE)
+set(HIDAPI_WITH_LIBUSB FALSE)
 add_subdirectory(hidapi)
-include_directories(hidapi/hidapi)
 
 # If you are building a VST2 or AAX plugin, CMake needs to be told where to find these SDKs on your
 # system. This setup should be done before calling `juce_add_plugin`.
@@ -48,14 +51,14 @@ juce_add_plugin(JoyconGoodness
     # COMPANY_NAME ...                          # Specify the name of the plugin's author
     # IS_SYNTH TRUE/FALSE                       # Is this a synth or an effect?
     # NEEDS_MIDI_INPUT TRUE/FALSE               # Does the plugin need midi input?
-    # NEEDS_MIDI_OUTPUT TRUE/FALSE              # Does the plugin need midi output?
-    # IS_MIDI_EFFECT TRUE/FALSE                 # Is this plugin a MIDI effect?
+    NEEDS_MIDI_OUTPUT TRUE                      # Does the plugin need midi output?
+    IS_MIDI_EFFECT TRUE                         # Is this plugin a MIDI effect?
     # EDITOR_WANTS_KEYBOARD_FOCUS TRUE/FALSE    # Does the editor need keyboard focus?
-    # COPY_PLUGIN_AFTER_BUILD TRUE/FALSE        # Should the plugin be installed to a default location after building?
+    COPY_PLUGIN_AFTER_BUILD TRUE                # Should the plugin be installed to a default location after building?
     PLUGIN_MANUFACTURER_CODE Juce               # A four-character manufacturer id with at least one upper-case character
     PLUGIN_CODE Dem0                            # A unique four-character plugin id with exactly one upper-case character
                                                 # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
-    FORMATS AU VST3 Standalone                  # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
+    FORMATS VST3 Standalone                     # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
     PRODUCT_NAME "Joycon Goodness")             # The name of the final executable, which can differ from the target name
 
 # `juce_generate_juce_header` will create a JuceHeader.h for a given target, which will be generated
@@ -112,7 +115,7 @@ target_link_libraries(JoyconGoodness
         juce::juce_audio_utils
         juce::juce_opengl
         hidapi::hidapi
-    PUBLIC
+        PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)

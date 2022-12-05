@@ -9,11 +9,13 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "hidapi.h"
+#include "joycon.hpp"
 
 //==============================================================================
 /**
 */
-class JoyconGoodnessAudioProcessor  : public juce::AudioProcessor
+class JoyconGoodnessAudioProcessor  : public juce::AudioProcessor, public juce::Timer
                             #if JucePlugin_Enable_ARA
                              , public juce::AudioProcessorARAExtension
                             #endif
@@ -56,7 +58,62 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    std::vector<hid_device_info> getHidDevices(void)
+    {
+        auto info = hid_enumerate(0, 0);
+        std::vector<hid_device_info> devices;
+
+        while (nullptr != info)
+        {
+            juce::String str(info->product_string);
+            if (str.isNotEmpty() && (info->vendor_id == 0x057e))
+            {
+                devices.push_back(*info);
+            }
+            info = info->next;
+        }
+
+        hid_free_enumeration(info);
+
+        return devices;
+    }
+
+    bool setHidDevice(hid_device_info info)
+    {
+        auto dev = hid_open(info.vendor_id, info.product_id, nullptr);
+        bool ret = false;
+
+        if (joycon != nullptr)
+        {
+            joycon->Detach();
+            delete joycon;
+        }
+
+        joycon = new Joycon(dev, true, true, 0.05f, (info.product_id == Joycon::product_id_left) ? true : false);
+
+        if (true == joycon->Attach())
+        {
+            ret = true;
+            joycon->Begin();
+            startTimer(5);
+        }
+
+        return ret;
+    }
+
+    Joycon* getJoycon(void)
+    {
+        return joycon;
+    }
+
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JoyconGoodnessAudioProcessor)
+
+    Joycon* joycon = nullptr;
+
+    void timerCallback() override
+    {
+        joycon->Update();
+    }
 };

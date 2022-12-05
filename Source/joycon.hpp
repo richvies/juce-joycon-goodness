@@ -6,19 +6,24 @@ class Joycon
 public:
     Joycon() :
     isLeft(false), hid_dev(nullptr), imu_enabled(true), do_localize(true),
-    filterweight(0.05f), rumble_obj(160, 320, 0), pollThread(*this)
+    alpha(0.05f), rumble_obj(160, 320, 0), pollThread(*this)
     {
     }
 
-	Joycon(hid_device* dev, bool imu, bool localize, float alpha, bool left) :
+	Joycon(hid_device* dev, bool imu, bool localize, float _alpha, bool left) :
     isLeft(left), hid_dev(dev), imu_enabled(imu), do_localize (localize),
-    filterweight(alpha), rumble_obj(160, 320, 0), pollThread(*this)
+    alpha(_alpha), rumble_obj(160, 320, 0), pollThread(*this)
     {
+    }
+
+    ~Joycon()
+    {
+        if(pollThread.isThreadRunning()) pollThread.stopThread(500);
     }
 
     void Begin()
     {
-        pollThread.startThread(juce::Thread::Priority::normal);
+        pollThread.startThread(juce::Thread::Priority::highest);
     }
 
     void SetRumble(float low_freq, float high_freq, float amp, uint time = 0)
@@ -64,14 +69,14 @@ public:
         pitchRollYaw.y = 0;
         pitchRollYaw.z = 0;
 
-        DebugPrint("Done with init.", DebugType::COMMS);
+        DebugPrint("Done with init", DebugType::COMMS);
 
         return true;
     }
 
     void SetFilterCoeff(float a)
     {
-        filterweight = a;
+        alpha = a;
     }
 
     void Detach()
@@ -98,53 +103,70 @@ public:
 
     void Update()
     {
+        if (stop_polling || (state <= state_::NO_JOYCONS))
+        {
+            DebugPrint("End poll thread.", DebugType::THREADING);
+            pollThread.stopThread(500);
+        }
+
         if (state > state_::NO_JOYCONS)
         {
             juce::CriticalSection critical;
             juce::ScopedLock scoped_lock(critical);
 
-            std::vector<uint8_t> report_buf(report_len);
+            Report rep;
+
+            bool update = false;
 
             while (!reports.empty())
             {
-                Report rep = reports.front();
+                update = true;
 
-                rep.CopyBuffer(report_buf);
+                rep = reports.front();
 
                 if (imu_enabled)
                 {
                     if (do_localize)
                     {
-                        ProcessIMU(report_buf);
+                        ProcessIMU(rep.r);
                     }
                     else
                     {
-                        ExtractIMUValues(report_buf, 0);
+                        ExtractIMUValues(rep.r, 0);
                     }
                 }
 
-                if (ts_de == report_buf[1])
+                if (ts_de == rep.r[1])
                 {
                     std::stringstream ss;
                     ss << "Duplicate timestamp dequeued. TS: ";
-                    ss << std::hex << std::setfill('0') << std::setw(2) << ts_de;
+                    ss << std::hex << std::setfill('0') << std::setw(2) << +ts_de;
                     DebugPrint(ss.str(), DebugType::THREADING);
                 }
 
                 std::stringstream ss;
-                ts_de = report_buf[1];
+                ts_de = rep.r[1];
                 ss << "Dequeue. Queue length: " << reports.size();
-                ss << ". Packet ID: " << std::hex << std::setfill('0') << std::setw(2) << report_buf[0];
-                ss << ". Timestamp: " << std::hex << std::setfill('0') << std::setw(2) << report_buf[1];
+                ss << ". Packet ID: " << std::hex << std::setfill('0') << std::setw(2) << +rep.r[0];
+                ss << ". Timestamp: " << std::hex << std::setfill('0') << std::setw(2) << +rep.r[1];
                 ss << ". Lag to dequeue: " <<  (juce::Time::getCurrentTime() - rep.GetTime()).inMilliseconds();
                 ss << ". Lag between packets (expect 15ms): ";
                 ss << (juce::Time::getCurrentTime() - ts_prev).inMilliseconds();
                 DebugPrint(ss.str(), DebugType::THREADING);
                 ts_prev = rep.GetTime();
+
+                reports.pop();
             }
 
-            ProcessButtonsAndStick(report_buf);
+            if (update)
+                ProcessButtonsAndStick(rep.r);
         }
+    }
+
+    /* returns values in range [-1, 1] for each angle */
+    juce::Vector3D<float> getPitchRollYaw()
+    {
+        return {pitchRollYaw / 4.4f};
     }
 
 
@@ -223,7 +245,7 @@ private:
     juce::Vector3D<float> pitchRollYaw;
 
     bool do_localize;
-    float filterweight;
+    float alpha;
 
     uint report_len = 49;
     class Report
@@ -231,6 +253,11 @@ private:
     public:
         std::vector<uint8_t> r;
         juce::Time t;
+
+        Report()
+        {
+            Report({0x00}, {});
+        }
 
         Report(std::vector<uint8_t> report, juce::Time time)
         {
@@ -241,11 +268,6 @@ private:
         juce::Time GetTime()
         {
             return t;
-        }
-
-        void CopyBuffer(std::vector<uint8_t> b)
-        {
-            b = r;
         }
     };
 
@@ -367,7 +389,7 @@ private:
     {
         if (d != DebugType::NONE)
         {
-            std::cout << s;
+            std::cout << s << std::endl;
         }
     }
 
@@ -401,12 +423,6 @@ private:
         return acc_g;
     }
 
-    /* returns values in range [-1, 1] for each angle */
-    juce::Vector3D<float> getPitchRollYaw()
-    {
-        return pitchRollYaw;
-    }
-
     uint8_t ts_en;
     uint8_t ts_de;
     juce::Time ts_prev;
@@ -419,9 +435,8 @@ private:
 
         std::vector<uint8_t> raw_buf(report_len);
 
-        int ret = hid_read(hid_dev, raw_buf.data(), report_len);
-
-        if (ret > 0)
+        int bytes = 0;
+        if ((bytes = hid_read(hid_dev, raw_buf.data(), report_len)) > 0)
         {
             juce::CriticalSection critical;
             juce::GenericScopedLock<juce::CriticalSection> scoped_lock(critical);
@@ -431,45 +446,41 @@ private:
             std::stringstream ss;
             if (ts_en == raw_buf[1])
             {
-                ss << "Duplicate timestamp enqueued. TS: " << std::hex << std::setfill('0') << std::setw(2) << ts_en;
+                ss << "Duplicate timestamp enqueued. TS: " << std::hex << std::setfill('0') << std::setw(2) << +ts_en;
                 DebugPrint(ss.str(), DebugType::THREADING);
             }
-            ts_en = raw_buf[1];
-            ss << "Enqueue. Bytes read: " << ret << ". Timestamp: 0x";
-            ss << std::hex << std::setfill('0') << std::setw(2) << raw_buf[1];
+            ss << "Enqueue. Bytes read: " << bytes << ". Timestamp: 0x";
+            ss << std::hex << std::setfill('0') << std::setw(2) << +raw_buf[1];
             DebugPrint(ss.str(), DebugType::THREADING);
+            PrintArray(raw_buf, DebugType::THREADING, std::ios_base::hex);
+
+            ts_en = raw_buf[1];
         }
 
-        return ret;
+        return (int)reports.size();
     }
 
     class PollThreadObj : public juce::Thread
     {
     public:
         PollThreadObj(Joycon& parent) : juce::Thread("poll", 0), j(parent) {}
+        ~PollThreadObj() override {if(isThreadRunning()) stopThread(500);}
 
         void run() override
         {
             int attempts = 0;
-            if (j.stop_polling || (j.state <= state_::NO_JOYCONS))
-            {
-                j.DebugPrint("End poll loop.", DebugType::THREADING);
-                stopThread(50);
-            }
-            else
+
+            while (!threadShouldExit())
             {
                 j.SendRumble(j.rumble_obj.GetData());
 
-                // TODO: why twice?
-                int a = j.ReceiveRaw();
-                a = j.ReceiveRaw();
-
-                if (a > 0)
+                if (j.ReceiveRaw() > 0)
                 {
                     j.state = state_::IMU_DATA_OK;
                     attempts = 0;
                 }
-                else if (attempts > 1000)
+                else
+                if (attempts > 1000)
                 {
                     j.state = state_::DROPPED;
                     j.DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType::ALL);
@@ -481,6 +492,8 @@ private:
                 }
 
                 ++attempts;
+
+                j.DebugPrint("poll done", DebugType::THREADING);
             }
         }
 
@@ -572,11 +585,11 @@ private:
         {
             ExtractIMUValues(report_buf, n);
 
-			float dt_sec = 0.005f * dt;
+			double dt_sec = 0.005f * dt;
 
-            sum[0] += gyr_g.x * dt_sec;
-            sum[1] += gyr_g.y * dt_sec;
-            sum[2] += gyr_g.z * dt_sec;
+            sum[0] += (float)(gyr_g.x * dt_sec);
+            sum[1] += (float)(gyr_g.y * dt_sec);
+            sum[2] += (float)(gyr_g.z * dt_sec);
 
             if (isLeft)
             {
@@ -586,15 +599,22 @@ private:
                 acc_g.z *= -1;
             }
 
-            // Calculating Roll and Pitch from the accelerometer data
             // TODO error correction
-            auto accAngleX = std::atan(acc_g.x / std::sqrt(pow(acc_g.y, 2) + std::pow(acc_g.z, 2))) * 180.f / juce::MathConstants<float>::pi;
-            auto accAngleY = std::atan(acc_g.y / std::sqrt(pow(acc_g.x, 2) + std::pow(acc_g.z, 2))) * 180.f / juce::MathConstants<float>::pi;
-            auto accAngleZ = std::atan(acc_g.z / std::sqrt(pow(acc_g.x, 2) + std::pow(acc_g.y, 2))) * 180.f / juce::MathConstants<float>::pi;
 
-            pitchRollYaw.x = (float)((filterweight * accAngleX) + ((1.0 - filterweight) * gyr_g.x * dt / 1000.0));
-            pitchRollYaw.y = (float)((filterweight * accAngleY) + ((1.0 - filterweight) * gyr_g.y * dt / 1000.0));
-            pitchRollYaw.y = (float)((filterweight * accAngleZ) + ((1.0 - filterweight) * gyr_g.z * dt / 1000.0));
+            // calculate accelerometer angle, range [-90, 90]
+            auto angleX = std::atan(acc_g.x / std::sqrt(pow(acc_g.y, 2) + std::pow(acc_g.z, 2))) * (180.0 / juce::MathConstants<double>::pi);
+            auto angleY = std::atan(acc_g.y / std::sqrt(pow(acc_g.x, 2) + std::pow(acc_g.z, 2))) * (180.0 / juce::MathConstants<double>::pi);
+            auto angleZ = std::atan(acc_g.z / std::sqrt(pow(acc_g.x, 2) + std::pow(acc_g.y, 2))) * (180.0 / juce::MathConstants<double>::pi);
+
+            // integrate change in angle from gyroscope, degrees per second * seconds
+            auto deltaX = gyr_g.x * dt_sec;
+            auto deltaY = gyr_g.y * dt_sec;
+            auto deltaZ = gyr_g.z * dt_sec;
+
+            // filter data, favour gyroscope for fast changes and accelerometer for stationary measurement
+            pitchRollYaw.x = (float)((alpha * angleX) + ((1.0 - alpha) * deltaX));
+            pitchRollYaw.y = (float)((alpha * angleY) + ((1.0 - alpha) * deltaY));
+            pitchRollYaw.z = (float)((alpha * angleZ) + ((1.0 - alpha) * deltaZ));
 
             dt = 1;
         }
@@ -640,6 +660,7 @@ private:
 
         report.insert(report.begin() + 2, buf.begin(), buf.end());
 
+        DebugPrint("Send Rumble", DebugType::COMMS);
         PrintArray(report, DebugType::RUMBLE, std::ios_base::hex);
 
         if (-1 == hid_write(hid_dev, report.data(), report.size()))
@@ -666,7 +687,7 @@ private:
         std::stringstream ss;
         if (print)
         {
-            ss << "Subcommand 0x" << std::hex << std::setfill('0') << std::setw(2) << sc << " sent" << std::endl;
+            ss << "Subcommand 0x" << std::hex << std::setfill('0') << std::setw(2) << +sc << " sent";
             DebugPrint(ss.str(), DebugType::COMMS);
             PrintArray(report, DebugType::COMMS, std::ios_base::hex);
         };
@@ -683,7 +704,7 @@ private:
         if (print)
         {
             ss.clear();
-            ss << "Response ID 0x" << std::hex << std::setfill('0') << std::setw(2) << response[0] << std::endl;
+            ss << "Response ID 0x" << std::hex << std::setfill('0') << std::setw(2) << +response[0];
             DebugPrint(ss.str(), DebugType::COMMS);
             PrintArray(response, DebugType::COMMS, std::ios_base::hex);
         }
@@ -790,17 +811,13 @@ private:
         }
 
         std::stringstream ss;
-        std::string prefix = "";
-
-        if (base == std::ios_base::hex)
-        {
-            ss << std::hex << std::setfill('0') << std::setw(sizeof(typename std::vector<T>::value_type));
-            prefix = "0x";
-        }
 
         for (auto iter = v.begin(); iter < v.end(); iter++)
         {
-            ss << prefix << *iter;
+            if (base == std::ios_base::hex)
+                ss << "0x" << std::hex << std::setfill('0') << std::setw(2 * sizeof(typename std::vector<T>::value_type)) << +(*iter) << " ";
+            else
+                ss << *iter << " ";
         }
 
         ss << std::endl;
