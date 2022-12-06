@@ -30,6 +30,7 @@ JoyconGoodnessAudioProcessorEditor::JoyconGoodnessAudioProcessorEditor (JoyconGo
 
 JoyconGoodnessAudioProcessorEditor::~JoyconGoodnessAudioProcessorEditor()
 {
+    stopTimer();
 }
 
 //==============================================================================
@@ -66,11 +67,16 @@ void JoyconGoodnessAudioProcessorEditor::comboBoxChanged (ComboBox* comboBoxThat
 {
     if (comboBoxThatHasChanged == &hidSelector)
     {
-        auto info = hidDevies[(u_long)hidSelector.getSelectedItemIndex()];
+        auto id = hidSelector.getSelectedId();
 
-        if (true == audioProcessor.setHidDevice(info))
+        if (id)
         {
-            joyconAttached();
+            auto info = hidDevies[(u_long)id - 1];
+
+            if (true == audioProcessor.setHidDevice(info))
+            {
+                joyconAttached();
+            }
         }
     }
 }

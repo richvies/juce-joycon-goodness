@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": ".."
+		},
+		{
+			"path": "../../../../Library/Audio/Plug-Ins"
 		}
 	],
 	"settings": {
@@ -127,7 +130,9 @@
 			"algorithm": "cpp",
 			"functional": "cpp",
 			"iterator": "cpp",
-			"utility": "cpp"
+			"utility": "cpp",
+			"__memory": "cpp",
+			"filesystem": "cpp"
 		},
 	},
 }

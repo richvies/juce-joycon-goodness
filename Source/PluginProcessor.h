@@ -16,9 +16,6 @@
 /**
 */
 class JoyconGoodnessAudioProcessor  : public juce::AudioProcessor, public juce::Timer
-                            #if JucePlugin_Enable_ARA
-                             , public juce::AudioProcessorARAExtension
-                            #endif
 {
 public:
     //==============================================================================
@@ -66,7 +63,7 @@ public:
         while (nullptr != info)
         {
             juce::String str(info->product_string);
-            if (str.isNotEmpty() && (info->vendor_id == 0x057e))
+            if (str.isNotEmpty() && (info->vendor_id == joycon->vendor_id))
             {
                 devices.push_back(*info);
             }
