@@ -135,9 +135,9 @@ void JoyconGoodnessAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
     midiMessages.clear();
     if (nullptr != joycon)
     {
-        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  23, (int)(joycon->getPitchRollYaw().x * 20.f)), 0);
-        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  24, (int)(joycon->getPitchRollYaw().y * 20.f)), 0);
-        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  25, (int)(joycon->getPitchRollYaw().z * 20.f)), 0);
+        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  16, (int)(joycon->getPitchRollYaw().x * 127.f)), 0);
+        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  17, (int)(joycon->getPitchRollYaw().y * 127.f)), 0);
+        midiMessages.addEvent(juce::MidiMessage::controllerEvent(1,  18, (int)(joycon->getPitchRollYaw().z * 127.f)), 0);
     }
 }
 

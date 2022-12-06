@@ -172,10 +172,14 @@ public:
         }
     }
 
-    /* returns values in range [-1, 1] for each angle */
     juce::Vector3D<float> getPitchRollYaw()
     {
-        return {pitchRollYaw / 4.4f};
+        auto tmp = pitchRollYaw / 4.4f;
+        tmp.x = juce::jlimit<float>(0, 1, tmp.x);
+        tmp.y = juce::jlimit<float>(0, 1, (tmp.y / 2) + 0.5f);
+        tmp.z = juce::jlimit<float>(0, 1, (tmp.z / 2) + 0.5f);
+
+        return tmp;
     }
 
 
